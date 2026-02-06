@@ -1,0 +1,2033 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Application de checklist et passation de consignes pour le Centre GPL">
+    <meta name="theme-color" content="#1e3a8a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="GPL Checklist">
+    
+    <title>GAZBER - GPL Checklist</title>
+    
+    <!-- React Libraries (CDN) -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- PDF Export Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+:root {
+    --industrial-dark: #0a0e27;
+    --industrial-blue: #1e3a8a;
+    --accent-orange: #f97316;
+    --accent-green: #10b981;
+    --accent-red: #ef4444;
+    --accent-purple: #8b5cf6;
+    --panel-bg: #1a1f3a;
+    --panel-border: #2d3748;
+    --text-primary: #e5e7eb;
+    --text-secondary: #9ca3af;
+    --warning-yellow: #fbbf24;
+    --success-green: #22c55e;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, var(--industrial-dark) 0%, #1a1f3a 100%);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+.app-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 10px;
+    min-height: 100vh;
+}
+
+.main-header {
+    background: linear-gradient(135deg, var(--industrial-blue) 0%, var(--accent-purple) 100%);
+    padding: 20px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.main-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    letter-spacing: 2px;
+}
+
+.main-subtitle {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin-top: 5px;
+}
+
+.login-container {
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 16px;
+    padding: 30px;
+    max-width: 450px;
+    margin: 0 auto 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.login-title {
+    font-size: 1.5rem;
+    color: var(--accent-orange);
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.login-subtitle {
+    color: var(--text-secondary);
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.form-input {
+    width: 100%;
+    padding: 14px;
+    background: var(--industrial-dark);
+    border: 2px solid var(--panel-border);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent-orange);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+}
+
+textarea.form-input {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent-orange) 0%, #ea580c 100%);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(249, 115, 22, 0.4);
+}
+
+.btn:disabled {
+    background: var(--panel-border);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-secondary {
+    background: var(--panel-border);
+}
+
+.btn-secondary:hover {
+    background: #3d4a5c;
+    box-shadow: none;
+}
+
+.btn-export {
+    padding: 10px 20px;
+    background: var(--accent-green);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-export:hover {
+    background: #059669;
+}
+
+.btn-logout {
+    padding: 8px 16px;
+    background: var(--accent-red);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-logout:hover {
+    background: #dc2626;
+}
+
+.user-info-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    background: var(--panel-bg);
+    padding: 15px 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid var(--panel-border);
+}
+
+.user-detail {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.user-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--accent-orange);
+}
+
+.time-display {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--accent-green);
+    font-family: 'Courier New', monospace;
+}
+
+.nav-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.nav-tab {
+    flex: 1;
+    min-width: 100px;
+    padding: 14px 20px;
+    background: var(--panel-bg);
+    border: 2px solid var(--panel-border);
+    border-radius: 10px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.nav-tab:hover {
+    border-color: var(--accent-orange);
+    color: var(--text-primary);
+}
+
+.nav-tab.active {
+    background: linear-gradient(135deg, var(--accent-orange) 0%, #ea580c 100%);
+    border-color: var(--accent-orange);
+    color: white;
+}
+
+.shift-selector {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.shift-btn {
+    flex: 1;
+    padding: 16px;
+    background: var(--panel-bg);
+    border: 2px solid var(--panel-border);
+    border-radius: 12px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.shift-btn:hover {
+    border-color: var(--industrial-blue);
+}
+
+.shift-btn.active {
+    background: linear-gradient(135deg, var(--industrial-blue) 0%, var(--accent-purple) 100%);
+    border-color: var(--industrial-blue);
+    color: white;
+}
+
+.progress-container {
+    background: var(--panel-bg);
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    border: 1px solid var(--panel-border);
+}
+
+.progress-label {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.progress-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    color: var(--text-secondary);
+}
+
+.progress-bar-bg {
+    height: 24px;
+    background: var(--industrial-dark);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-green) 0%, var(--accent-orange) 100%);
+    border-radius: 12px;
+    transition: width 0.5s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: white;
+}
+
+.checklist-container {
+    margin-bottom: 20px;
+}
+
+.category-header {
+    background: linear-gradient(135deg, var(--industrial-blue) 0%, var(--accent-purple) 100%);
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 10px;
+    margin-top: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.task-item {
+    background: var(--panel-bg);
+    padding: 16px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    border: 2px solid var(--panel-border);
+    transition: all 0.3s ease;
+}
+
+.task-item:hover {
+    border-color: var(--accent-orange);
+}
+
+.task-item.completed {
+    border-color: var(--accent-green);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.task-description {
+    flex: 1;
+    min-width: 200px;
+    font-size: 0.95rem;
+}
+
+.task-responsible {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.checkbox {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    accent-color: var(--accent-green);
+}
+
+.checkbox-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.time-input {
+    width: 80px;
+    padding: 8px;
+    background: var(--industrial-dark);
+    border: 1px solid var(--panel-border);
+    border-radius: 6px;
+    color: var(--accent-green);
+    text-align: center;
+    font-family: 'Courier New', monospace;
+}
+
+.complete-section {
+    background: var(--panel-bg);
+    padding: 25px;
+    border-radius: 12px;
+    text-align: center;
+    border: 1px solid var(--panel-border);
+    margin-bottom: 20px;
+}
+
+.btn-complete {
+    padding: 18px 40px;
+    background: linear-gradient(135deg, var(--accent-green) 0%, #059669 100%);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.btn-complete:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+}
+
+.btn-complete:disabled {
+    background: var(--panel-border);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.passation-container {
+    margin-bottom: 20px;
+}
+
+.passation-section {
+    background: var(--panel-bg);
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+    border: 1px solid var(--panel-border);
+}
+
+.section-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--accent-orange);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.equipment-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.equipment-table th,
+.equipment-table td {
+    padding: 10px;
+    border: 1px solid var(--panel-border);
+    text-align: left;
+}
+
+.equipment-table th {
+    background: var(--industrial-dark);
+    color: var(--accent-orange);
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.equipment-table input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    background: var(--industrial-dark);
+    border: 1px solid var(--panel-border);
+    border-radius: 4px;
+    color: var(--text-primary);
+}
+
+.equipment-table input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--accent-orange);
+}
+
+.history-container {
+    background: var(--panel-bg);
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid var(--panel-border);
+}
+
+.export-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.history-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.history-item {
+    background: var(--industrial-dark);
+    padding: 16px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    border: 1px solid var(--panel-border);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.history-item:hover {
+    border-color: var(--accent-orange);
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.history-name {
+    font-weight: 600;
+    color: var(--accent-orange);
+}
+
+.history-date {
+    color: var(--text-secondary);
+}
+
+.history-details {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.history-detail {
+    display: flex;
+    flex-direction: column;
+}
+
+.history-detail-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.history-detail-value {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+
+.modal-content {
+    background: var(--panel-bg);
+    padding: 30px;
+    border-radius: 16px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 2px solid var(--accent-orange);
+}
+
+.modal-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 20px;
+    color: var(--accent-orange);
+}
+
+.success-icon {
+    font-size: 4rem;
+    text-align: center;
+    margin-bottom: 15px;
+    color: var(--accent-green);
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.modal-buttons .btn {
+    flex: 1;
+}
+
+.export-option {
+    margin-bottom: 15px;
+}
+
+.export-option label {
+    display: block;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+.export-option select,
+.export-option input {
+    width: 100%;
+    padding: 12px;
+    background: var(--industrial-dark);
+    border: 2px solid var(--panel-border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+
+.export-option select:focus,
+.export-option input:focus {
+    outline: none;
+    border-color: var(--accent-orange);
+}
+
+.export-summary {
+    background: var(--industrial-dark);
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+    margin: 15px 0;
+}
+
+.email-info {
+    background: rgba(139, 92, 246, 0.1);
+    border: 2px solid var(--accent-purple);
+    padding: 15px;
+    border-radius: 10px;
+    margin: 15px 0;
+}
+
+.email-info-title {
+    color: var(--accent-purple);
+    font-weight: 600;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.email-recipient {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.btn-email {
+    background: linear-gradient(135deg, var(--accent-purple) 0%, #7c3aed 100%);
+    margin-top: 10px;
+}
+
+.btn-email:hover {
+    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4);
+}
+
+@media (max-width: 768px) {
+    .main-title {
+        font-size: 1.8rem;
+    }
+    
+    .user-info-bar {
+        justify-content: center;
+        text-align: center;
+    }
+    
+    .task-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .checkbox-container {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .time-input {
+        width: 100%;
+    }
+    
+    .modal-buttons {
+        flex-direction: column;
+    }
+}
+
+#offline-banner {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, var(--accent-orange) 0%, var(--accent-red) 100%);
+    color: white;
+    text-align: center;
+    padding: 10px;
+    font-weight: 600;
+    z-index: 10000;
+}
+
+.spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 8px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <div id="offline-banner">⚠️ Mode hors-ligne</div>
+
+    <script type="text/babel">
+// ============================================
+// DESTINATAIRES EMAIL - CONFIGURÉS
+// ============================================
+const EMAIL_RECIPIENTS = [
+    { name: 'Salah ELASRAOUI', email: 'salah.elasraoui@totalenergies.com' },
+    { name: 'Adam NABOULSI', email: 'adam.naboulsi@totalenergies.com' },
+    { name: 'Abdelhak TERGHAOUI', email: 'abdelhak.terghaoui@totalenergies.ma' }
+];
+
+// ============================================
+// DONNÉES CHECKLIST
+// ============================================
+const CHECKLIST_DATA = [
+    {
+        category: "GARDIENNAGE / CHEF DE HALL",
+        tasks: [
+            { id: 1, text: "Passation de consignes écrites et signées gardien / personnel dépôt", responsible: "Gardiennage/Chef de hall", shift: "morning" },
+            { id: 2, text: "Etablir l'inventaire journalier du stock outil et comparer à celui de la fermeture N-1", responsible: "Gardiennage/Chef de hall", shift: "morning" },
+            { id: 3, text: "Etablir l'inventaire du stock outil en fin d'activité", responsible: "Gardiennage/Chef de hall", shift: "evening" },
+            { id: 4, text: "Allumer l'éclairage et fermer tous les accès", responsible: "Gardiennage/Chef de hall", shift: "evening" }
+        ]
+    },
+    {
+        category: "AGENT ADMINISTRATIF",
+        tasks: [
+            { id: 5, text: "Afficher le niveau des réservoirs au poste de garde pour les pompiers", responsible: "Agent Administratif", shift: "morning" }
+        ]
+    },
+    {
+        category: "CHEF DE QUART",
+        tasks: [
+            { id: 6, text: "Vérifier l'état général des installations", responsible: "Chef de Quart", shift: "morning" },
+            { id: 7, text: "Contrôler les équipements de sécurité", responsible: "Chef de Quart", shift: "morning" },
+            { id: 8, text: "Vérifier les niveaux de stock GPL", responsible: "Chef de Quart", shift: "morning" },
+            { id: 9, text: "Rédiger le rapport de fin de quart", responsible: "Chef de Quart", shift: "evening" },
+            { id: 10, text: "Transmettre les consignes au quart suivant", responsible: "Chef de Quart", shift: "evening" }
+        ]
+    },
+    {
+        category: "OPERATEUR",
+        tasks: [
+            { id: 11, text: "Vérifier le fonctionnement des pompes", responsible: "Opérateur", shift: "morning" },
+            { id: 12, text: "Contrôler les vannes et raccords", responsible: "Opérateur", shift: "morning" },
+            { id: 13, text: "Effectuer la ronde de sécurité", responsible: "Opérateur", shift: "morning" },
+            { id: 14, text: "Nettoyer la zone de travail", responsible: "Opérateur", shift: "evening" },
+            { id: 15, text: "Ranger les outils et équipements", responsible: "Opérateur", shift: "evening" }
+        ]
+    }
+];
+
+// ============================================
+// APPLICATION
+// ============================================
+const { useState, useEffect } = React;
+
+function App() {
+    const [user, setUser] = useState(null);
+    const [activeTab, setActiveTab] = useState('checklist');
+    const [shift, setShift] = useState('morning');
+    const [tasks, setTasks] = useState({});
+    const [passationForm, setPassationForm] = useState({
+        equipementsDCI: '',
+        permisTravail: '',
+        etatCommande: '',
+        ligneStatut: '',
+        equipements: [
+            { nom: '', defectueux: false, deconsignes: false, consignes: false, remarques: '' },
+            { nom: '', defectueux: false, deconsignes: false, consignes: false, remarques: '' },
+            { nom: '', defectueux: false, deconsignes: false, consignes: false, remarques: '' },
+            { nom: '', defectueux: false, deconsignes: false, consignes: false, remarques: '' },
+            { nom: '', defectueux: false, deconsignes: false, consignes: false, remarques: '' }
+        ],
+        operationsPlanifiees: '',
+        faitsDivers: ''
+    });
+    const [startTime, setStartTime] = useState(null);
+    const [showSuccess, setShowSuccess] = useState(false);
+    const [showExport, setShowExport] = useState(false);
+    const [history, setHistory] = useState([]);
+    const [currentTime, setCurrentTime] = useState(new Date());
+    const [exportDateRange, setExportDateRange] = useState({
+        from: new Date().toISOString().split('T')[0],
+        to: new Date().toISOString().split('T')[0]
+    });
+    const [exportType, setExportType] = useState('all');
+    const [isExporting, setIsExporting] = useState(false);
+
+    useEffect(() => {
+        const savedHistory = localStorage.getItem('gpl-history');
+        if (savedHistory) {
+            setHistory(JSON.parse(savedHistory));
+        }
+    }, []);
+
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const handleLogin = (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        setUser({
+            nom: formData.get('nom'),
+            prenom: formData.get('prenom'),
+            id: formData.get('id')
+        });
+        setStartTime(new Date());
+    };
+
+    const handleLogout = () => {
+        if (window.confirm('Êtes-vous sûr de vouloir vous déconnecter?')) {
+            setUser(null);
+            setTasks({});
+            setPassationForm({
+                equipementsDCI: '',
+                permisTravail: '',
+                etatCommande: '',
+                ligneStatut: '',
+                equipements: Array(5).fill({ nom: '', defectueux: false, deconsignes: false, consignes: false, remarques: '' }),
+                operationsPlanifiees: '',
+                faitsDivers: ''
+            });
+            setStartTime(null);
+        }
+    };
+
+    const handleTaskToggle = (taskId) => {
+        setTasks(prev => ({
+            ...prev,
+            [taskId]: {
+                completed: !prev[taskId]?.completed,
+                time: !prev[taskId]?.completed ? new Date().toLocaleTimeString('fr-FR') : prev[taskId]?.time
+            }
+        }));
+    };
+
+    const handlePassationChange = (field, value) => {
+        setPassationForm(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleEquipmentChange = (index, field, value) => {
+        setPassationForm(prev => {
+            const newEquipements = [...prev.equipements];
+            newEquipements[index] = { ...newEquipements[index], [field]: value };
+            return { ...prev, equipements: newEquipements };
+        });
+    };
+
+    const getRelevantTasks = () => {
+        return CHECKLIST_DATA.flatMap(cat => cat.tasks.filter(task => task.shift === shift));
+    };
+
+    const calculateProgress = () => {
+        const relevantTasks = getRelevantTasks();
+        const completed = relevantTasks.filter(task => tasks[task.id]?.completed).length;
+        return { 
+            completed, 
+            total: relevantTasks.length, 
+            percentage: relevantTasks.length > 0 ? (completed / relevantTasks.length * 100) : 0 
+        };
+    };
+
+    const handleComplete = () => {
+        const endTime = new Date();
+        const duration = Math.floor((endTime - startTime) / 1000 / 60);
+        
+        const completionData = {
+            type: activeTab,
+            user,
+            shift,
+            startTime: startTime.toLocaleString('fr-FR'),
+            endTime: endTime.toLocaleString('fr-FR'),
+            duration: `${duration} min`,
+            date: new Date().toLocaleDateString('fr-FR'),
+            fullDate: new Date().toISOString(),
+            timestamp: Date.now()
+        };
+
+        if (activeTab === 'checklist') {
+            completionData.tasks = tasks;
+            completionData.progress = calculateProgress();
+        } else {
+            completionData.passationForm = passationForm;
+        }
+
+        const newHistory = [completionData, ...history];
+        setHistory(newHistory);
+        localStorage.setItem('gpl-history', JSON.stringify(newHistory));
+        setShowSuccess(true);
+    };
+
+    const resetSession = () => {
+        setShowSuccess(false);
+        setTasks({});
+        setPassationForm({
+            equipementsDCI: '',
+            permisTravail: '',
+            etatCommande: '',
+            ligneStatut: '',
+            equipements: Array(5).fill({ nom: '', defectueux: false, deconsignes: false, consignes: false, remarques: '' }),
+            operationsPlanifiees: '',
+            faitsDivers: ''
+        });
+        setStartTime(new Date());
+    };
+
+    const isFormComplete = () => {
+        if (activeTab === 'checklist') {
+            return calculateProgress().percentage === 100;
+        }
+        return passationForm.equipementsDCI && passationForm.permisTravail;
+    };
+
+    // ============================================
+    // PDF EXPORT - PROFESSIONAL DESIGN
+    // ============================================
+    const filterHistoryForExport = () => {
+        return history.filter(item => {
+            const itemDate = new Date(item.timestamp || item.fullDate);
+            const fromDate = new Date(exportDateRange.from);
+            const toDate = new Date(exportDateRange.to);
+            toDate.setHours(23, 59, 59, 999);
+            fromDate.setHours(0, 0, 0, 0);
+            if (itemDate < fromDate || itemDate > toDate) return false;
+            if (exportType !== 'all' && item.type !== exportType) return false;
+            return true;
+        });
+    };
+
+    const createFormattedPDF = () => {
+        const filteredHistory = filterHistoryForExport();
+        if (filteredHistory.length === 0) return null;
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const W = 210, H = 297;
+        const ML = 12, MR = 12, MT = 12;
+        const CW = W - ML - MR; // 186
+
+        // Colors
+        const NAVY   = [10, 14, 39];
+        const BLUE   = [30, 58, 138];
+        const ORANGE = [249, 115, 22];
+        const GREEN  = [16, 185, 129];
+        const RED    = [239, 68, 68];
+        const PURPLE = [139, 92, 246];
+        const PANEL  = [26, 31, 58];
+        const WHITE  = [255, 255, 255];
+        const GRAY   = [120, 130, 150];
+        const LGRAY  = [240, 241, 245];
+        const DGRAY  = [60, 65, 80];
+
+        let y = MT;
+
+        // ─── Draw TotalEnergies sun ─── //
+        function drawSun(cx, cy, r) {
+            pdf.setDrawColor(255, 0, 0);
+            pdf.setLineWidth(0.6);
+            for (let d = 0; d < 360; d += 45) {
+                const rad = d * Math.PI / 180;
+                pdf.line(cx+Math.cos(rad)*r*0.65, cy+Math.sin(rad)*r*0.65, cx+Math.cos(rad)*r, cy+Math.sin(rad)*r);
+            }
+            pdf.setLineWidth(0.7);
+            pdf.circle(cx, cy, r*0.55, 'S');
+            pdf.setFillColor(255, 0, 0);
+            pdf.circle(cx, cy, r*0.22, 'F');
+        }
+
+        // ─── Page Header ─── //
+        function drawHeader(title) {
+            // Dark header block
+            pdf.setFillColor(...NAVY);
+            pdf.roundedRect(ML, y, CW, 24, 3, 3, 'F');
+            // Blue accent bar
+            pdf.setFillColor(...BLUE);
+            pdf.rect(ML, y, CW, 8, 'F');
+            // Round top corners
+            pdf.setFillColor(...BLUE);
+            pdf.roundedRect(ML, y, CW, 10, 3, 3, 'F');
+            pdf.setFillColor(...NAVY);
+            pdf.rect(ML, y+8, CW, 2, 'F');
+
+            // Sun logo
+            drawSun(ML + 8, y + 5, 4);
+
+            // TotalEnergies text
+            pdf.setFont('helvetica','bold');
+            pdf.setFontSize(7.5);
+            pdf.setTextColor(255,255,255);
+            pdf.text('Total', ML + 14, y + 6);
+            pdf.setTextColor(255, 0, 0);
+            const tw = pdf.getTextWidth('Total');
+            pdf.text('Energies', ML + 14 + tw + 0.8, y + 6);
+
+            // Main title
+            pdf.setTextColor(255,255,255);
+            pdf.setFont('helvetica','bold');
+            pdf.setFontSize(12);
+            pdf.text(title, ML + CW/2, y + 16, {align:'center'});
+
+            // Subtitle line
+            pdf.setTextColor(180,185,200);
+            pdf.setFont('helvetica','normal');
+            pdf.setFontSize(6.5);
+            pdf.text('Centre GPL GAZBER  |  Periode: ' + exportDateRange.from + ' au ' + exportDateRange.to + '  |  Export: ' + new Date().toLocaleDateString('fr-FR'), ML + CW/2, y + 21.5, {align:'center'});
+
+            y += 28;
+        }
+
+        // ─── Section Title ─── //
+        function drawSection(title) {
+            if (y > H - 20) newPage();
+            pdf.setFillColor(...BLUE);
+            pdf.roundedRect(ML, y, CW, 7, 1.5, 1.5, 'F');
+            pdf.setTextColor(255,255,255);
+            pdf.setFontSize(7.5);
+            pdf.setFont('helvetica','bold');
+            pdf.text(title, ML + 4, y + 5);
+            y += 9;
+        }
+
+        // ─── Info Card ─── //
+        function drawInfoCard(label, value, x, w) {
+            pdf.setFillColor(...LGRAY);
+            pdf.roundedRect(x, y, w, 14, 2, 2, 'F');
+            // Left orange accent
+            pdf.setFillColor(...ORANGE);
+            pdf.rect(x, y + 2, 1.5, 10, 'F');
+            // Label
+            pdf.setTextColor(...GRAY);
+            pdf.setFontSize(5.5);
+            pdf.setFont('helvetica','bold');
+            pdf.text(label.toUpperCase(), x + 5, y + 5);
+            // Value
+            pdf.setTextColor(...NAVY);
+            pdf.setFontSize(9);
+            pdf.setFont('helvetica','bold');
+            const valStr = String(value || '-');
+            const maxC = Math.floor((w - 8) / 2.2);
+            pdf.text(valStr.length > maxC ? valStr.substring(0, maxC-1) + '..' : valStr, x + 5, y + 11.5);
+        }
+
+        // ─── Simple table ─── //
+        function drawTableHeader(cols, widths) {
+            if (y > H - 14) newPage();
+            const rowH = 6;
+            pdf.setFillColor(...PANEL);
+            pdf.rect(ML, y, CW, rowH, 'F');
+            let cx = ML;
+            pdf.setTextColor(...ORANGE);
+            pdf.setFontSize(5.5);
+            pdf.setFont('helvetica','bold');
+            cols.forEach((col, i) => {
+                pdf.text(col, cx + 2, y + 4.2);
+                cx += widths[i];
+            });
+            // borders
+            pdf.setDrawColor(50,55,80);
+            pdf.setLineWidth(0.2);
+            pdf.line(ML, y + rowH, ML + CW, y + rowH);
+            y += rowH;
+        }
+
+        function drawTableRow(cols, widths, idx) {
+            if (y > H - 14) newPage();
+            const rowH = 6.5;
+            pdf.setFillColor(...(idx % 2 === 0 ? WHITE : LGRAY));
+            pdf.rect(ML, y, CW, rowH, 'F');
+            let cx = ML;
+            cols.forEach((col, i) => {
+                const w = widths[i];
+                const text = String(col.text || col || '-');
+                const color = col.color || NAVY;
+                const bold = col.bold || false;
+                pdf.setTextColor(...color);
+                pdf.setFontSize(6);
+                pdf.setFont('helvetica', bold ? 'bold' : 'normal');
+                const maxC = Math.floor((w - 4) / 1.6);
+                const display = text.length > maxC ? text.substring(0, maxC - 1) + '..' : text;
+                pdf.text(display, cx + 2, y + 4.5);
+                cx += w;
+            });
+            pdf.setDrawColor(220,222,230);
+            pdf.setLineWidth(0.1);
+            pdf.line(ML, y + rowH, ML + CW, y + rowH);
+            y += rowH;
+        }
+
+        // ─── Status pill ─── //
+        function drawPill(text, color, x, py) {
+            const w = 16;
+            pdf.setFillColor(...color);
+            pdf.roundedRect(x, py, w, 4, 2, 2, 'F');
+            pdf.setTextColor(255,255,255);
+            pdf.setFontSize(5);
+            pdf.setFont('helvetica','bold');
+            pdf.text(text, x + w/2, py + 3, {align:'center'});
+        }
+
+        // ─── New Page ─── //
+        function newPage() {
+            drawFooter();
+            pdf.addPage();
+            y = MT;
+        }
+
+        // ─── Footer ─── //
+        function drawFooter() {
+            pdf.setDrawColor(...BLUE);
+            pdf.setLineWidth(0.3);
+            pdf.line(ML, H - 10, W - MR, H - 10);
+            pdf.setTextColor(...GRAY);
+            pdf.setFontSize(5.5);
+            pdf.setFont('helvetica','normal');
+            pdf.text('TotalEnergies Marketing Maroc - Centre GPL GAZBER', ML + 3, H - 5);
+        }
+
+        // ─── Text block (for long text) ─── //
+        function drawTextBlock(label, content) {
+            if (y > H - 25) newPage();
+            // Label bar
+            pdf.setFillColor(...PANEL);
+            pdf.roundedRect(ML, y, CW, 6, 1, 1, 'F');
+            pdf.setTextColor(...ORANGE);
+            pdf.setFontSize(7);
+            pdf.setFont('helvetica','bold');
+            pdf.text(label, ML + 4, y + 4.3);
+            y += 7.5;
+            // Content box
+            const text = content || '-';
+            pdf.setFontSize(7);
+            pdf.setFont('helvetica','normal');
+            const lines = pdf.splitTextToSize(text, CW - 10);
+            const blockH = Math.max(7, lines.length * 3.5 + 4);
+            if (y + blockH > H - 14) newPage();
+            pdf.setFillColor(...LGRAY);
+            pdf.roundedRect(ML, y, CW, blockH, 1, 1, 'F');
+            pdf.setTextColor(...DGRAY);
+            pdf.text(lines, ML + 4, y + 4);
+            y += blockH + 3;
+        }
+
+        // ═══════════════════════════════════
+        // DATA
+        // ═══════════════════════════════════
+        const checklistItems = filteredHistory.filter(i => i.type === 'checklist');
+        const passationItems = filteredHistory.filter(i => i.type === 'passation');
+
+        // ═══════════════════════════════════
+        // PAGE 1: RESUME
+        // ═══════════════════════════════════
+        drawHeader('RAPPORT D\'ACTIVITE - RESUME');
+
+        // Stats cards (4 across)
+        const cw4 = (CW - 12) / 4;
+        drawInfoCard('Total Entrees', filteredHistory.length, ML, cw4);
+        drawInfoCard('Checklists', checklistItems.length, ML + cw4 + 4, cw4);
+        drawInfoCard('Passations', passationItems.length, ML + (cw4 + 4)*2, cw4);
+        drawInfoCard('Exporte par', user ? (user.prenom + ' ' + user.nom) : 'Systeme', ML + (cw4 + 4)*3, cw4);
+        y += 18;
+
+        // Operators
+        const ops = [...new Set(filteredHistory.map(item => item.user.prenom + ' ' + item.user.nom + ' (' + item.user.id + ')'))];
+        if (ops.length > 0) {
+            drawSection('OPERATEURS ACTIFS');
+            ops.forEach((op, i) => {
+                if (y > H - 12) newPage();
+                pdf.setFillColor(...(i % 2 === 0 ? WHITE : LGRAY));
+                pdf.rect(ML, y, CW, 6, 'F');
+                pdf.setTextColor(...DGRAY);
+                pdf.setFontSize(7);
+                pdf.setFont('helvetica','normal');
+                pdf.text('  * ' + op, ML + 3, y + 4.2);
+                y += 6;
+            });
+            y += 4;
+        }
+
+        // Recipients
+        drawSection('DESTINATAIRES DU RAPPORT');
+        EMAIL_RECIPIENTS.forEach((r, i) => {
+            if (y > H - 12) newPage();
+            pdf.setFillColor(...(i % 2 === 0 ? WHITE : LGRAY));
+            pdf.rect(ML, y, CW, 6, 'F');
+            pdf.setTextColor(...DGRAY);
+            pdf.setFontSize(7);
+            pdf.setFont('helvetica','normal');
+            pdf.text('  > ' + r.name + '  -  ' + r.email, ML + 3, y + 4.2);
+            y += 6;
+        });
+
+        // ═══════════════════════════════════
+        // CHECKLIST PAGES
+        // ═══════════════════════════════════
+        if (checklistItems.length > 0) {
+            newPage();
+            drawHeader('RAPPORT CHECKLIST');
+
+            // Overview table
+            drawSection('SESSIONS CHECKLIST');
+            const ow = [24, 22, 22, 18, 40, 22, 16, 22]; // total = 186
+            drawTableHeader(['DATE','DEBUT','FIN','QUART','OPERATEUR','MATRICULE','DUREE','PROGRES'], ow);
+
+            checklistItems.forEach((item, idx) => {
+                const startT = (item.startTime||'').split(', ')[1] || (item.startTime||'').split(' ')[1] || item.startTime || '-';
+                const endT = (item.endTime||'').split(', ')[1] || (item.endTime||'').split(' ')[1] || item.endTime || '-';
+                const pct = Math.round(item.progress?.percentage || 0);
+                const pctColor = pct === 100 ? GREEN : pct > 50 ? ORANGE : RED;
+
+                drawTableRow([
+                    item.date || '-',
+                    startT,
+                    endT,
+                    item.shift === 'morning' ? 'Matin' : 'Soir',
+                    item.user.prenom + ' ' + item.user.nom,
+                    item.user.id || '-',
+                    item.duration || '-',
+                    {text: pct + '% (' + (item.progress?.completed||0) + '/' + (item.progress?.total||0) + ')', color: pctColor, bold: true}
+                ], ow, idx);
+            });
+            y += 6;
+
+            // Detailed task breakdown per session
+            checklistItems.forEach((item, sIdx) => {
+                if (y > H - 30) newPage();
+                y += 2;
+                drawSection('DETAIL - ' + item.user.prenom + ' ' + item.user.nom + ' | ' + item.date + ' | ' + (item.shift === 'morning' ? 'Matin' : 'Soir'));
+
+                // Group by category
+                CHECKLIST_DATA.forEach(category => {
+                    const catTasks = category.tasks.filter(t => t.shift === item.shift);
+                    if (catTasks.length === 0) return;
+
+                    if (y > H - 16) newPage();
+
+                    // Category sub-header
+                    pdf.setFillColor(235, 237, 245);
+                    pdf.rect(ML, y, CW, 5.5, 'F');
+                    pdf.setFillColor(...PURPLE);
+                    pdf.rect(ML, y, 2, 5.5, 'F');
+                    pdf.setTextColor(...BLUE);
+                    pdf.setFontSize(6);
+                    pdf.setFont('helvetica','bold');
+                    pdf.text(category.category, ML + 5, y + 4);
+                    y += 6;
+
+                    catTasks.forEach((task, ti) => {
+                        if (y > H - 12) newPage();
+                        const done = item.tasks?.[task.id]?.completed;
+                        const rowH = 7;
+
+                        pdf.setFillColor(...(ti % 2 === 0 ? WHITE : LGRAY));
+                        pdf.rect(ML, y, CW, rowH, 'F');
+
+                        // Task text
+                        pdf.setTextColor(...DGRAY);
+                        pdf.setFontSize(6);
+                        pdf.setFont('helvetica','normal');
+                        const taskText = task.text.length > 70 ? task.text.substring(0, 69) + '..' : task.text;
+                        pdf.text(taskText, ML + 3, y + 4.8);
+
+                        // Status pill
+                        drawPill(done ? 'FAIT' : 'NON', done ? GREEN : RED, ML + CW - 42, y + 1.5);
+
+                        // Time
+                        pdf.setTextColor(...NAVY);
+                        pdf.setFontSize(6);
+                        pdf.setFont('helvetica','bold');
+                        pdf.text(item.tasks?.[task.id]?.time || '--:--', ML + CW - 22, y + 4.8);
+
+                        pdf.setDrawColor(230,232,240);
+                        pdf.setLineWidth(0.1);
+                        pdf.line(ML, y + rowH, ML + CW, y + rowH);
+                        y += rowH;
+                    });
+                    y += 1;
+                });
+                y += 4;
+            });
+        }
+
+        // ═══════════════════════════════════
+        // PASSATION PAGES
+        // ═══════════════════════════════════
+        if (passationItems.length > 0) {
+            newPage();
+            drawHeader('RAPPORT PASSATION DE CONSIGNES');
+
+            passationItems.forEach((item, pIdx) => {
+                if (pIdx > 0) {
+                    y += 4;
+                    if (y > H - 50) newPage();
+                    // Separator
+                    pdf.setDrawColor(...ORANGE);
+                    pdf.setLineWidth(0.5);
+                    pdf.line(ML + 20, y, ML + CW - 20, y);
+                    y += 6;
+                }
+
+                drawSection('PASSATION - ' + item.user.prenom + ' ' + item.user.nom + ' | ' + item.date);
+
+                // Info cards (2x2)
+                const hw = (CW - 4) / 2;
+                drawInfoCard('Operateur', item.user.prenom + ' ' + item.user.nom, ML, hw);
+                drawInfoCard('Matricule', item.user.id, ML + hw + 4, hw);
+                y += 16;
+                if (y > H - 30) newPage();
+                drawInfoCard('Date / Heure', item.date + ' | ' + ((item.startTime||'').split(', ')[1] || item.startTime || '-'), ML, hw);
+                drawInfoCard('Duree', item.duration || '-', ML + hw + 4, hw);
+                y += 18;
+
+                // Form content
+                const pf = item.passationForm || {};
+
+                drawTextBlock('EQUIPEMENTS DCI', pf.equipementsDCI);
+                drawTextBlock('PERMIS DE TRAVAIL', pf.permisTravail);
+                drawTextBlock('ETAT DE LA COMMANDE', pf.etatCommande);
+                drawTextBlock('STATUT DE LA LIGNE', pf.ligneStatut);
+                drawTextBlock('OPERATIONS PLANIFIEES', pf.operationsPlanifiees);
+                drawTextBlock('FAITS DIVERS', pf.faitsDivers);
+
+                // Equipment table
+                const equips = pf.equipements || [];
+                const filledEquips = equips.filter(e => e.nom);
+                if (filledEquips.length > 0) {
+                    if (y > H - 25) newPage();
+                    drawSection('EQUIPEMENTS - CHECKLIST');
+
+                    // Header
+                    const eqW = [46, 22, 26, 24, 68]; // = 186
+                    drawTableHeader(['EQUIPEMENT','DEFECT.','DECONSIG.','CONSIG.','REMARQUES'], eqW);
+
+                    filledEquips.forEach((eq, ei) => {
+                        if (y > H - 12) newPage();
+                        const rowH = 6.5;
+                        pdf.setFillColor(...(ei % 2 === 0 ? WHITE : LGRAY));
+                        pdf.rect(ML, y, CW, rowH, 'F');
+
+                        // Name
+                        pdf.setTextColor(...DGRAY);
+                        pdf.setFontSize(6.5);
+                        pdf.setFont('helvetica','normal');
+                        const eqName = (eq.nom||'-');
+                        pdf.text(eqName.length > 22 ? eqName.substring(0,21)+'..' : eqName, ML + 2, y + 4.5);
+
+                        // Status pills
+                        drawPill(eq.defectueux ? 'OUI' : 'NON', eq.defectueux ? RED : [180,185,195], ML + 48, y + 1.2);
+                        drawPill(eq.deconsignes ? 'OUI' : 'NON', eq.deconsignes ? ORANGE : [180,185,195], ML + 70, y + 1.2);
+                        drawPill(eq.consignes ? 'OUI' : 'NON', eq.consignes ? GREEN : [180,185,195], ML + 96, y + 1.2);
+
+                        // Remarks
+                        pdf.setTextColor(...GRAY);
+                        pdf.setFontSize(5.5);
+                        const rem = eq.remarques || '-';
+                        pdf.text(rem.length > 40 ? rem.substring(0,39)+'..' : rem, ML + 120, y + 4.5);
+
+                        pdf.setDrawColor(230,232,240);
+                        pdf.setLineWidth(0.1);
+                        pdf.line(ML, y + rowH, ML + CW, y + rowH);
+                        y += rowH;
+                    });
+                }
+            });
+        }
+
+        // Final footer
+        drawFooter();
+
+        // Add page numbers on ALL pages
+        const totalPages = pdf.getNumberOfPages();
+        for (let p = 1; p <= totalPages; p++) {
+            pdf.setPage(p);
+            // Clear area for page number
+            pdf.setFillColor(255,255,255);
+            pdf.rect(W - MR - 25, H - 8, 25, 6, 'F');
+            pdf.setTextColor(...GRAY);
+            pdf.setFontSize(5.5);
+            pdf.setFont('helvetica','normal');
+            pdf.text('Page ' + p + ' / ' + totalPages, W - MR, H - 5, {align:'right'});
+        }
+
+        return pdf;
+    };
+
+    // Télécharger PDF + Ouvrir Email
+    const handleExportAndEmail = () => {
+        setIsExporting(true);
+        
+        try {
+            const pdf = createFormattedPDF();
+            
+            if (!pdf) {
+                alert('Aucune donnée à exporter pour cette période.');
+                setIsExporting(false);
+                return;
+            }
+
+            const filename = `GPL_Rapport_${exportDateRange.from}_au_${exportDateRange.to}.pdf`;
+            pdf.save(filename);
+
+            // Ouvrir l'email avec les destinataires pré-remplis
+            const emails = EMAIL_RECIPIENTS.map(r => r.email).join(',');
+            const summary = getExportSummary();
+            const subject = encodeURIComponent(`[GPL GAZBER] Rapport du ${exportDateRange.from} au ${exportDateRange.to}`);
+            const body = encodeURIComponent(
+`Bonjour,
+
+Veuillez trouver ci-joint le rapport GPL GAZBER.
+
+📅 Période: ${exportDateRange.from} au ${exportDateRange.to}
+📊 Contenu:
+   - Checklists: ${summary.checklists}
+   - Passations: ${summary.passations}
+   - Total: ${summary.total} entrées
+
+📎 Fichier joint: ${filename}
+
+Exporté par: ${user ? `${user.prenom} ${user.nom}` : 'Système'}
+Date d'export: ${new Date().toLocaleString('fr-FR')}
+
+Cordialement,
+Centre GPL GAZBER`
+            );
+
+            window.location.href = `mailto:${emails}?subject=${subject}&body=${body}`;
+
+            setTimeout(() => {
+                setShowExport(false);
+                setIsExporting(false);
+                alert(`✅ PDF "${filename}" téléchargé!\n\n📧 Votre application email s'est ouverte.\n\n⚠️ N'oubliez pas de joindre le fichier PDF avant d'envoyer.`);
+            }, 500);
+
+        } catch (error) {
+            console.error('Export error:', error);
+            alert('Erreur: ' + error.message);
+            setIsExporting(false);
+        }
+    };
+
+    // Télécharger PDF seulement
+    const handleExportOnly = () => {
+        setIsExporting(true);
+        
+        try {
+            const pdf = createFormattedPDF();
+            
+            if (!pdf) {
+                alert('Aucune donnée à exporter pour cette période.');
+                setIsExporting(false);
+                return;
+            }
+
+            const filename = `GPL_Rapport_${exportDateRange.from}_au_${exportDateRange.to}.pdf`;
+            pdf.save(filename);
+
+            setShowExport(false);
+            setIsExporting(false);
+            alert(`✅ PDF "${filename}" téléchargé avec succès!`);
+
+        } catch (error) {
+            console.error('Export error:', error);
+            alert('Erreur: ' + error.message);
+            setIsExporting(false);
+        }
+    };
+
+    // Partager via l'API native (mobile)
+    const handleShare = async () => {
+        try {
+            const pdf = createFormattedPDF();
+            
+            if (!pdf) {
+                alert('Aucune donnée à exporter pour cette période.');
+                return;
+            }
+            
+            const filename = `GPL_Rapport_${exportDateRange.from}_au_${exportDateRange.to}.pdf`;
+            const pdfBlob = pdf.output('blob');
+            const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: 'Rapport GPL GAZBER',
+                    text: `Rapport GPL du ${exportDateRange.from} au ${exportDateRange.to}`
+                });
+                setShowExport(false);
+            } else {
+                alert('Le partage de fichiers n\'est pas supporté sur cet appareil. Utilisez le bouton "Télécharger + Email".');
+            }
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                console.error('Share error:', error);
+            }
+        }
+    };
+
+    const getExportSummary = () => {
+        const filteredHistory = history.filter(item => {
+            const itemDate = new Date(item.timestamp || item.fullDate);
+            const fromDate = new Date(exportDateRange.from);
+            const toDate = new Date(exportDateRange.to);
+            toDate.setHours(23, 59, 59, 999);
+            
+            if (itemDate < fromDate || itemDate > toDate) return false;
+            if (exportType !== 'all' && item.type !== exportType) return false;
+            return true;
+        });
+
+        return {
+            total: filteredHistory.length,
+            checklists: filteredHistory.filter(item => item.type === 'checklist').length,
+            passations: filteredHistory.filter(item => item.type === 'passation').length
+        };
+    };
+
+    const progress = calculateProgress();
+    const exportSummary = getExportSummary();
+
+    // ========== LOGIN SCREEN ==========
+    if (!user) {
+        return (
+            <div className="app-container">
+                <div className="main-header">
+                    <h1 className="main-title">🛢️ GAZBER</h1>
+                    <p className="main-subtitle">Système de Gestion GPL - Checklist & Passation</p>
+                </div>
+
+                <div className="login-container">
+                    <h2 className="login-title">🔐 IDENTIFICATION</h2>
+                    <p className="login-subtitle">Veuillez vous identifier pour commencer</p>
+                    
+                    <form onSubmit={handleLogin}>
+                        <div className="form-group">
+                            <label className="form-label">Nom</label>
+                            <input type="text" name="nom" className="form-input" required placeholder="Votre nom" />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">Prénom</label>
+                            <input type="text" name="prenom" className="form-input" required placeholder="Votre prénom" />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label">ID / Matricule</label>
+                            <input type="text" name="id" className="form-input" required placeholder="Votre identifiant" />
+                        </div>
+                        <button type="submit" className="btn">🚀 Démarrer la session</button>
+                    </form>
+                </div>
+
+                {history.length > 0 && (
+                    <div className="history-container">
+                        <div className="export-header">
+                            <h3 className="history-title">📊 Historique</h3>
+                            <button className="btn-export" onClick={() => setShowExport(true)}>📤 Exporter & Envoyer</button>
+                        </div>
+                        
+                        {history.slice(0, 3).map((item, idx) => (
+                            <div key={idx} className="history-item">
+                                <div className="history-header">
+                                    <span className="history-name">{item.user.prenom} {item.user.nom}</span>
+                                    <span className="history-date">{item.date}</span>
+                                </div>
+                                <div className="history-details">
+                                    <div className="history-detail">
+                                        <div className="history-detail-label">Type</div>
+                                        <div className="history-detail-value">{item.type === 'checklist' ? '✅ Checklist' : '📋 Passation'}</div>
+                                    </div>
+                                    <div className="history-detail">
+                                        <div className="history-detail-label">Quart</div>
+                                        <div className="history-detail-value">{item.shift === 'morning' ? '🌅 Matin' : '🌙 Soir'}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {showExport && (
+                    <div className="modal-overlay" onClick={() => setShowExport(false)}>
+                        <div className="modal-content" onClick={e => e.stopPropagation()}>
+                            <h3 className="modal-title">📤 Exporter & Envoyer</h3>
+                            
+                            <div className="export-option">
+                                <label>📅 Date de début</label>
+                                <input type="date" value={exportDateRange.from} onChange={e => setExportDateRange(prev => ({...prev, from: e.target.value}))} />
+                            </div>
+
+                            <div className="export-option">
+                                <label>📅 Date de fin</label>
+                                <input type="date" value={exportDateRange.to} onChange={e => setExportDateRange(prev => ({...prev, to: e.target.value}))} />
+                            </div>
+
+                            <div className="export-option">
+                                <label>📋 Type</label>
+                                <select value={exportType} onChange={e => setExportType(e.target.value)}>
+                                    <option value="all">Tout</option>
+                                    <option value="checklist">Checklists</option>
+                                    <option value="passation">Passations</option>
+                                </select>
+                            </div>
+
+                            <div className="export-summary">
+                                <p><strong>{exportSummary.total}</strong> entrées à exporter</p>
+                            </div>
+
+                            <div className="email-info">
+                                <div className="email-info-title">📧 Destinataires de l'email</div>
+                                {EMAIL_RECIPIENTS.map((r, i) => (
+                                    <div key={i} className="email-recipient">
+                                        <span>📬</span>
+                                        <span>{r.name}</span>
+                                        <span style={{opacity: 0.7}}>({r.email})</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <button className="btn btn-email" onClick={handleExportAndEmail} disabled={isExporting || exportSummary.total === 0}>
+                                {isExporting ? <><span className="spinner"></span>Export...</> : '📧 Télécharger PDF + Ouvrir Email'}
+                            </button>
+
+                            <button className="btn btn-secondary" style={{marginTop: '10px'}} onClick={handleExportOnly} disabled={isExporting || exportSummary.total === 0}>
+                                📥 Télécharger PDF seulement
+                            </button>
+
+                            {navigator.share && (
+                                <button className="btn" style={{marginTop: '10px', background: 'var(--accent-green)'}} onClick={handleShare}>
+                                    📱 Partager PDF via WhatsApp/App
+                                </button>
+                            )}
+
+                            <button className="btn btn-secondary" style={{marginTop: '10px'}} onClick={() => setShowExport(false)}>
+                                Annuler
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // ========== MAIN APP ==========
+    return (
+        <div className="app-container">
+            <div className="main-header">
+                <h1 className="main-title">🛢️ GAZBER</h1>
+                <p className="main-subtitle">Gestion Complète des Opérations GPL</p>
+            </div>
+
+            <div className="user-info-bar">
+                <div className="user-detail">
+                    <span className="user-label">Opérateur</span>
+                    <span className="user-value">{user.prenom} {user.nom}</span>
+                </div>
+                <div className="user-detail">
+                    <span className="user-label">ID</span>
+                    <span className="user-value">{user.id}</span>
+                </div>
+                <div className="user-detail">
+                    <span className="user-label">Début</span>
+                    <span className="user-value">{startTime?.toLocaleTimeString('fr-FR')}</span>
+                </div>
+                <div className="user-detail">
+                    <span className="user-label">Durée</span>
+                    <span className="time-display">{Math.floor((currentTime - startTime) / 1000 / 60)} min</span>
+                </div>
+                <button className="btn-logout" onClick={handleLogout}>🚪 Déconnexion</button>
+            </div>
+
+            <div className="nav-tabs">
+                <button className={`nav-tab ${activeTab === 'checklist' ? 'active' : ''}`} onClick={() => setActiveTab('checklist')}>✅ CHECKLIST</button>
+                <button className={`nav-tab ${activeTab === 'passation' ? 'active' : ''}`} onClick={() => setActiveTab('passation')}>📋 PASSATION</button>
+                <button className={`nav-tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>📊 HISTORIQUE</button>
+            </div>
+
+            {activeTab !== 'history' && (
+                <div className="shift-selector">
+                    <button className={`shift-btn ${shift === 'morning' ? 'active' : ''}`} onClick={() => setShift('morning')}>🌅 MATIN</button>
+                    <button className={`shift-btn ${shift === 'evening' ? 'active' : ''}`} onClick={() => setShift('evening')}>🌙 SOIR</button>
+                </div>
+            )}
+
+            {activeTab === 'checklist' && (
+                <>
+                    <div className="progress-container">
+                        <div className="progress-label">📊 Progression du Quart {shift === 'morning' ? 'Matin' : 'Soir'}</div>
+                        <div className="progress-stats">
+                            <span>{progress.completed} / {progress.total} tâches</span>
+                            <span>{Math.round(progress.percentage)}%</span>
+                        </div>
+                        <div className="progress-bar-bg">
+                            <div className="progress-bar-fill" style={{ width: `${progress.percentage}%` }}>
+                                {progress.percentage > 10 && `${Math.round(progress.percentage)}%`}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="checklist-container">
+                        {CHECKLIST_DATA.map(category => {
+                            const categoryTasks = category.tasks.filter(task => task.shift === shift);
+                            if (categoryTasks.length === 0) return null;
+
+                            return (
+                                <div key={category.category}>
+                                    <div className="category-header">{category.category}</div>
+                                    {categoryTasks.map(task => (
+                                        <div key={task.id} className={`task-item ${tasks[task.id]?.completed ? 'completed' : ''}`}>
+                                            <div>
+                                                <div className="task-description">{task.text}</div>
+                                                <div className="task-responsible">👤 {task.responsible}</div>
+                                            </div>
+                                            <div className="checkbox-container">
+                                                <input type="checkbox" className="checkbox" checked={tasks[task.id]?.completed || false} onChange={() => handleTaskToggle(task.id)} />
+                                                <span className="checkbox-label">{tasks[task.id]?.completed ? '✅ Fait' : '⬜ À faire'}</span>
+                                            </div>
+                                            <input type="text" className="time-input" placeholder="HH:MM" value={tasks[task.id]?.time || ''} readOnly />
+                                        </div>
+                                    ))}
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className="complete-section">
+                        <p style={{ marginBottom: '20px', fontSize: '1rem', color: 'var(--text-secondary)' }}>
+                            ⚠️ *Avec utilisation d'un explosimètre portatif calibré
+                        </p>
+                        <button className="btn-complete" onClick={handleComplete} disabled={!isFormComplete()}>
+                            ✅ Terminer & Enregistrer
+                        </button>
+                        {!isFormComplete() && (
+                            <p style={{ marginTop: '15px', color: 'var(--warning-yellow)' }}>
+                                Complétez toutes les tâches pour terminer
+                            </p>
+                        )}
+                    </div>
+                </>
+            )}
+
+            {activeTab === 'passation' && (
+                <div className="passation-container">
+                    <div className="passation-section">
+                        <h3 className="section-title">🔥 Equipements DCI *</h3>
+                        <textarea className="form-input" value={passationForm.equipementsDCI} onChange={e => handlePassationChange('equipementsDCI', e.target.value)} placeholder="État des équipements DCI..." />
+                    </div>
+
+                    <div className="passation-section">
+                        <h3 className="section-title">📝 Permis de Travail *</h3>
+                        <textarea className="form-input" value={passationForm.permisTravail} onChange={e => handlePassationChange('permisTravail', e.target.value)} placeholder="Permis de travail en cours..." />
+                    </div>
+
+                    <div className="passation-section">
+                        <h3 className="section-title">📦 État de la Commande</h3>
+                        <textarea className="form-input" value={passationForm.etatCommande} onChange={e => handlePassationChange('etatCommande', e.target.value)} placeholder="État de la commande..." />
+                    </div>
+
+                    <div className="passation-section">
+                        <h3 className="section-title">🔗 Statut de la Ligne</h3>
+                        <textarea className="form-input" value={passationForm.ligneStatut} onChange={e => handlePassationChange('ligneStatut', e.target.value)} placeholder="Statut de la ligne..." />
+                    </div>
+
+                    <div className="passation-section">
+                        <h3 className="section-title">🔧 Equipements - Checklist</h3>
+                        <div style={{ overflowX: 'auto' }}>
+                            <table className="equipment-table">
+                                <thead>
+                                    <tr>
+                                        <th>Équipement</th>
+                                        <th>Défectueux</th>
+                                        <th>Déconsignés</th>
+                                        <th>Consignés</th>
+                                        <th>Remarques</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {passationForm.equipements.map((equip, index) => (
+                                        <tr key={index}>
+                                            <td><input type="text" value={equip.nom} onChange={e => handleEquipmentChange(index, 'nom', e.target.value)} placeholder={`Équip. ${index + 1}`} /></td>
+                                            <td style={{ textAlign: 'center' }}><input type="checkbox" checked={equip.defectueux} onChange={e => handleEquipmentChange(index, 'defectueux', e.target.checked)} /></td>
+                                            <td style={{ textAlign: 'center' }}><input type="checkbox" checked={equip.deconsignes} onChange={e => handleEquipmentChange(index, 'deconsignes', e.target.checked)} /></td>
+                                            <td style={{ textAlign: 'center' }}><input type="checkbox" checked={equip.consignes} onChange={e => handleEquipmentChange(index, 'consignes', e.target.checked)} /></td>
+                                            <td><input type="text" value={equip.remarques} onChange={e => handleEquipmentChange(index, 'remarques', e.target.value)} placeholder="Remarques..." /></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <button 
+                            type="button"
+                            onClick={() => setPassationForm(prev => ({
+                                ...prev,
+                                equipements: [...prev.equipements, { nom: '', defectueux: false, deconsignes: false, consignes: false, remarques: '' }]
+                            }))}
+                            style={{ marginTop: '10px', padding: '10px 20px', background: 'var(--accent-green)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
+                        >
+                            ➕ Ajouter un équipement
+                        </button>
+                    </div>
+
+                    <div className="passation-section">
+                        <h3 className="section-title">📅 Opérations Planifiées</h3>
+                        <textarea className="form-input" value={passationForm.operationsPlanifiees} onChange={e => handlePassationChange('operationsPlanifiees', e.target.value)} placeholder="Opérations planifiées..." />
+                    </div>
+
+                    <div className="passation-section">
+                        <h3 className="section-title">📰 Faits Divers</h3>
+                        <textarea className="form-input" value={passationForm.faitsDivers} onChange={e => handlePassationChange('faitsDivers', e.target.value)} placeholder="Faits divers à signaler..." />
+                    </div>
+
+                    <div className="complete-section">
+                        <button className="btn-complete" onClick={handleComplete} disabled={!isFormComplete()}>
+                            ✅ Terminer & Enregistrer
+                        </button>
+                        {!isFormComplete() && (
+                            <p style={{ marginTop: '15px', color: 'var(--warning-yellow)' }}>
+                                ⚠️ Remplissez les champs obligatoires (DCI et Permis de travail)
+                            </p>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'history' && (
+                <div className="history-container">
+                    <div className="export-header">
+                        <h3 className="history-title">📊 Historique des Sessions</h3>
+                        <button className="btn-export" onClick={() => setShowExport(true)}>📤 Exporter & Envoyer</button>
+                    </div>
+                    
+                    {history.length === 0 ? (
+                        <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '40px' }}>
+                            Aucun historique disponible
+                        </p>
+                    ) : (
+                        history.map((item, idx) => (
+                            <div key={idx} className="history-item">
+                                <div className="history-header">
+                                    <span className="history-name">{item.user.prenom} {item.user.nom}</span>
+                                    <span className="history-date">{item.date}</span>
+                                </div>
+                                <div className="history-details">
+                                    <div className="history-detail">
+                                        <div className="history-detail-label">Type</div>
+                                        <div className="history-detail-value">{item.type === 'checklist' ? '✅ Checklist' : '📋 Passation'}</div>
+                                    </div>
+                                    <div className="history-detail">
+                                        <div className="history-detail-label">Quart</div>
+                                        <div className="history-detail-value">{item.shift === 'morning' ? '🌅 Matin' : '🌙 Soir'}</div>
+                                    </div>
+                                    <div className="history-detail">
+                                        <div className="history-detail-label">Durée</div>
+                                        <div className="history-detail-value">{item.duration}</div>
+                                    </div>
+                                    {item.type === 'checklist' && item.progress && (
+                                        <div className="history-detail">
+                                            <div className="history-detail-label">Progression</div>
+                                            <div className="history-detail-value">{Math.round(item.progress.percentage)}%</div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            )}
+
+            {showSuccess && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <div className="success-icon">✅</div>
+                        <h3 className="modal-title">Session enregistrée!</h3>
+                        <p style={{ textAlign: 'center', marginBottom: '20px', color: 'var(--text-secondary)' }}>
+                            Votre {activeTab === 'checklist' ? 'checklist' : 'passation'} a été sauvegardée.
+                        </p>
+                        <div className="modal-buttons">
+                            <button className="btn" onClick={resetSession}>🔄 Nouvelle session</button>
+                            <button className="btn btn-secondary" onClick={handleLogout}>🚪 Déconnexion</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showExport && (
+                <div className="modal-overlay" onClick={() => setShowExport(false)}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <h3 className="modal-title">📤 Exporter & Envoyer</h3>
+                        
+                        <div className="export-option">
+                            <label>📅 Date de début</label>
+                            <input type="date" value={exportDateRange.from} onChange={e => setExportDateRange(prev => ({...prev, from: e.target.value}))} />
+                        </div>
+
+                        <div className="export-option">
+                            <label>📅 Date de fin</label>
+                            <input type="date" value={exportDateRange.to} onChange={e => setExportDateRange(prev => ({...prev, to: e.target.value}))} />
+                        </div>
+
+                        <div className="export-option">
+                            <label>📋 Type</label>
+                            <select value={exportType} onChange={e => setExportType(e.target.value)}>
+                                <option value="all">Tout</option>
+                                <option value="checklist">Checklists</option>
+                                <option value="passation">Passations</option>
+                            </select>
+                        </div>
+
+                        <div className="export-summary">
+                            <p><strong>{exportSummary.total}</strong> entrées à exporter</p>
+                        </div>
+
+                        <div className="email-info">
+                            <div className="email-info-title">📧 Destinataires</div>
+                            {EMAIL_RECIPIENTS.map((r, i) => (
+                                <div key={i} className="email-recipient">
+                                    <span>📬</span>
+                                    <span>{r.name}</span>
+                                    <span style={{opacity: 0.7}}>({r.email})</span>
+                                </div>
+                            ))}
+                        </div>
+
+                        <button className="btn btn-email" onClick={handleExportAndEmail} disabled={isExporting || exportSummary.total === 0}>
+                            {isExporting ? <><span className="spinner"></span>Export...</> : '📧 Télécharger PDF + Ouvrir Email'}
+                        </button>
+
+                        <button className="btn btn-secondary" style={{marginTop: '10px'}} onClick={handleExportOnly} disabled={isExporting || exportSummary.total === 0}>
+                            📥 Télécharger PDF seulement
+                        </button>
+
+                        {navigator.share && (
+                            <button className="btn" style={{marginTop: '10px', background: 'var(--accent-green)'}} onClick={handleShare}>
+                                📱 Partager PDF via WhatsApp/App
+                            </button>
+                        )}
+
+                        <button className="btn btn-secondary" style={{marginTop: '10px'}} onClick={() => setShowExport(false)}>
+                            Annuler
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+
+    <script>
+        const offlineBanner = document.getElementById('offline-banner');
+        function updateOnlineStatus() {
+            offlineBanner.style.display = navigator.onLine ? 'none' : 'block';
+        }
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus();
+    </script>
+</body>
+</html>
